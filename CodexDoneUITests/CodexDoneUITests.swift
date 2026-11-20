@@ -158,7 +158,10 @@ final class CodexDoneUITests: XCTestCase {
 
     conversation.click()
 
-    XCTAssertTrue(app.staticTexts["无法打开会话"].waitForExistence(timeout: 5))
+    XCTAssertTrue(
+      app.descendants(matching: .any)["menu-open-codex-error"]
+        .waitForExistence(timeout: 5)
+    )
     XCTAssertTrue(app.staticTexts["2 条待查看"].exists)
   }
 
