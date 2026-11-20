@@ -62,10 +62,22 @@ enum HUDAlertClickAction {
     acknowledgeRecord: (String) -> Void,
     returnToCodex: (String) -> Void
   ) {
-    if let unreadRecordID {
-      acknowledgeRecord(unreadRecordID)
-    }
+    if let unreadRecordID { acknowledgeRecord(unreadRecordID) }
     returnToCodex(sessionID)
+  }
+}
+
+@MainActor
+enum MenuAlertClickAction {
+  static func perform(
+    sessionID: String?,
+    unreadRecordID: String?,
+    openSession: (String?) async -> Bool,
+    acknowledgeRecord: (String) -> Void
+  ) async -> Bool {
+    guard await openSession(sessionID) else { return false }
+    if let unreadRecordID { acknowledgeRecord(unreadRecordID) }
+    return true
   }
 }
 
@@ -725,10 +737,6 @@ final class AppEnvironment {
     }
   }
 
-  func canOpenRecord(_ record: ConversationCompletionRecord) -> Bool {
-    canOpenCodex(sessionID: record.sessionID)
-  }
-
   func requestNotificationAuthorization() async {
     #if DEBUG
       if isUITest {
@@ -781,14 +789,20 @@ final class AppEnvironment {
   }
 
   func openCodex(recordID: String? = nil) {
-    let sessionID: String?
-    if let recordID {
-      sessionID = completionStore.records.first(where: { $0.id == recordID })?.sessionID
+    let record = if let recordID {
+      completionStore.records.first { $0.id == recordID }
     } else {
-      sessionID = completionStore.unreadRecords.first?.sessionID
+      completionStore.unreadRecords.first
     }
-    guard canOpenCodex(sessionID: sessionID) else { return }
-    Task { await returnToCodex(sessionID: sessionID) }
+    let sessionID = record?.sessionID
+    Task {
+      _ = await MenuAlertClickAction.perform(
+        sessionID: sessionID,
+        unreadRecordID: record?.isAcknowledged == false ? record?.id : nil,
+        openSession: { await self.returnToCodex(sessionID: $0) },
+        acknowledgeRecord: { self.completionStore.acknowledge(recordID: $0) }
+      )
+    }
   }
 
   func blockSimilarSubmittedMessages(for record: ConversationCompletionRecord) {

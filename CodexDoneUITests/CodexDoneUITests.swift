@@ -141,6 +141,27 @@ final class CodexDoneUITests: XCTestCase {
     XCTAssertTrue(app.staticTexts["2 条待查看"].waitForExistence(timeout: 5))
   }
 
+  func testMenuClickShowsFailureAndKeepsConversationUnread() throws {
+    let app = localizedApplication()
+    app.launchArguments += [
+      "--ui-test",
+      "--ui-test-multiple-records",
+      "--ui-test-open-menu-popover",
+    ]
+    app.launch()
+    addTeardownBlock { app.terminate() }
+
+    let popover = app.descendants(matching: .any)["menu-popover-root"]
+    XCTAssertTrue(popover.waitForExistence(timeout: 5))
+    let conversation = app.buttons["menu-open-session-ui-test-record-codexdone"]
+    XCTAssertTrue(conversation.waitForExistence(timeout: 5))
+
+    conversation.click()
+
+    XCTAssertTrue(app.staticTexts["无法打开会话"].waitForExistence(timeout: 5))
+    XCTAssertTrue(app.staticTexts["2 条待查看"].exists)
+  }
+
   func testStatusItemUnreadCountCanBeHiddenFromSettings() throws {
     let app = localizedApplication()
     app.launchArguments += [

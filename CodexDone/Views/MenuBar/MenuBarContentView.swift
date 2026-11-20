@@ -132,7 +132,6 @@ struct MenuBarContentView: View {
         .contentShape(Rectangle())
       }
       .buttonStyle(.plain)
-      .disabled(!environment.canOpenRecord(record))
       .help(record.terminalSessionID != nil ? L10n.text("在 iTerm2 中打开会话") : L10n.text("打开会话"))
       .accessibilityIdentifier("menu-open-session-\(record.id)")
 

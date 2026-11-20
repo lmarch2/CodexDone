@@ -565,6 +565,34 @@ final class OverlayWindowCoordinatorTests: XCTestCase {
     XCTAssertEqual(operations, ["return:test-alert"])
   }
 
+  func testMenuClickAcknowledgesOnlyAfterSuccessfulReturn() async {
+    var operations: [String] = []
+
+    let opened = await MenuAlertClickAction.perform(
+      sessionID: "session-menu",
+      unreadRecordID: "record-menu",
+      openSession: { sessionID in
+        operations.append("open:\(sessionID ?? "nil")")
+        return true
+      },
+      acknowledgeRecord: { operations.append("acknowledge:\($0)") }
+    )
+
+    XCTAssertTrue(opened)
+    XCTAssertEqual(operations, ["open:session-menu", "acknowledge:record-menu"])
+
+    operations.removeAll()
+    let failed = await MenuAlertClickAction.perform(
+      sessionID: "session-closed",
+      unreadRecordID: "record-closed",
+      openSession: { _ in false },
+      acknowledgeRecord: { operations.append("acknowledge:\($0)") }
+    )
+
+    XCTAssertFalse(failed)
+    XCTAssertTrue(operations.isEmpty)
+  }
+
   func testNotchClickAcknowledgesOnlyItsRecordAfterSuccessfulReturn() async {
     var operations: [String] = []
     let opened = await NotchAlertClickAction.perform(
